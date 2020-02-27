@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+    <http:listener-config name="users-_api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="users-_api-config" api="users-_api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="9b8eaf4d-eb31-43f6-b4ed-a5997c6cea70" >
+		<wsc:connection wsdlLocation="http://api.icraftsoft.net:5858/ws/users.wsdl" service="UserPortService" port="UserPortSoap11" address="http://api.icraftsoft.net:5858/ws" >
+			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next" />
+		</wsc:connection>
+	</wsc:config>
+	<flow name="users-_api-main">
+        <http:listener config-ref="users-_api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="users-_api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="users-_api-console">
+        <http:listener config-ref="users-_api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="users-_api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\users\(id):users-_api-config">
+        <set-variable value="#[attributes.uriParams.'id']" doc:name="Set Variable" doc:id="fd7e8ed1-1ff3-4ba8-a864-28da291a4a09" variableName="varput"/>
+		<wsc:consume operation="UpdateUser" doc:name="Consume" doc:id="4d3acbe7-7f7f-4fa4-951e-41537cac6cd8" config-ref="Web_Service_Consumer_Config">
+			<wsc:message >
+				<wsc:body ><![CDATA[#[output application/xml
+ns ns0 http://www.craftsoftware.com/users
+---
+{
+	ns0#UpdateUserRequest: {
+		ns0#User: {
+			ns0#id: vars.varput,
+			ns0#fist: payload.fist,
+			ns0#last: payload.last,
+			ns0#department: payload.department
+		}
+	}
+}]]]></wsc:body>
+			</wsc:message>
+		</wsc:consume>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="b6a99fcf-9df1-4b75-b906-edaed82aac95">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.body.UpdateUserResponse]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="5706c0a1-ad79-423f-96ed-1e314a6ac7f0" message="#[payload]"/>
+    </flow>
+    <flow name="delete:\users\(id):users-_api-config">
+        <set-variable value="#[attributes.uriParams.'id']" doc:name="Set Variable" doc:id="e1bceedd-5844-4f83-8cbd-2c6c644da9ca" variableName="vardel"/>
+		<wsc:consume operation="DeleteUser" doc:name="Consume" doc:id="e65d17aa-802f-40e3-a669-db901b1016e0" config-ref="Web_Service_Consumer_Config">
+			<wsc:message >
+				<wsc:body ><![CDATA[#[output application/xml
+ns ns0 http://www.craftsoftware.com/users
+---
+{
+	ns0#DeleteUserRequest: {
+		ns0#id: vars.vardel
+	}
+}]]]></wsc:body>
+			</wsc:message>
+		</wsc:consume>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="09fb93b7-069f-4d3f-becd-78d0b554cbd6">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "message":"User Deleted"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="cb5b41a6-d2d6-442a-959f-6be35f967938" message="#[payload]"/>
+    </flow>
+    <flow name="get:\users:users-_api-config">
+        <wsc:consume operation="GetAllUsers" doc:name="Consume" doc:id="418119e7-4437-43c6-8f6b-03c1d8be4f0f" config-ref="Web_Service_Consumer_Config">
+			<wsc:message >
+				<wsc:body ><![CDATA[#[output application/xml
+ns ns0 http://www.craftsoftware.com/users
+---
+{
+	ns0#GetAllUsersRequest: payload
+}]]]></wsc:body>
+			</wsc:message>
+		</wsc:consume>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="9523c15d-62a1-471a-9505-e555cdbb10b0">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.body.GetAllUsersResponse]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c4355273-04e8-431a-b5c7-a8244ef9d494" message="#[payload]"/>
+    </flow>
+    <flow name="get:\users\(id):users-_api-config">
+        <set-variable value="#[attributes.uriParams.'id']" doc:name="Set Variable" doc:id="b12312d6-2e20-4afc-b499-bc51e97bfe6a" variableName="varget"/>
+		<wsc:consume doc:name="Consume" doc:id="07c66b88-3577-4a27-a762-77396e183159" config-ref="Web_Service_Consumer_Config" operation="GetUser">
+			<wsc:message >
+				<wsc:body ><![CDATA[#[output application/xml
+ns ns0 http://www.craftsoftware.com/users
+---
+{
+	ns0#GetUserRequest: {
+		ns0#id: vars.varget
+	}
+}]]]></wsc:body>
+			</wsc:message>
+		</wsc:consume>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="a8a87591-d597-4281-94a0-0685550d81ff">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.body.GetUserResponse]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e4f2a9d3-f338-4af2-beef-1af6eb804aac" message="#[payload]"/>
+    </flow>
+    <flow name="post:\users:application\json:users-_api-config">
+        <wsc:consume operation="CreateUser" doc:name="Consume" doc:id="d30c37fc-46c8-45bb-9eae-3da7deee01da" config-ref="Web_Service_Consumer_Config">
+			<wsc:message >
+				<wsc:body ><![CDATA[#[output application/xml
+ns ns0 http://www.craftsoftware.com/users
+---
+{
+	ns0#CreateUserRequest: {
+		ns0#CreateUser: {
+			ns0#fist: payload.fist,
+			ns0#last: payload.last,
+			ns0#department: payload.department
+		}
+	}
+}]]]></wsc:body>
+			</wsc:message>
+		</wsc:consume>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="a05a19b5-70cf-4823-a61d-6f558dbf56fc">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"message":"users created"]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="f7833e65-9748-43a9-a616-7211722e98c2" message="#[payload]"/>
+    </flow>
+</mule>
